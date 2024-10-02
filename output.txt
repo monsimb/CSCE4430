@@ -1,0 +1,5 @@
+2,integer
+*,operator
+3,integer
++,operator
+5,integer
