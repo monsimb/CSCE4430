@@ -9,7 +9,7 @@ typedef struct ASTNode {
 } ASTNode;
 
 typedef struct Token {
-    char *type; // e.g., "integer", "operator"
+    char *type; // like "integer", "operator"
     char *value; // The actual token string
 } Token;
 
@@ -62,11 +62,10 @@ ASTNode* parse_factor() {
 
     ASTNode *node = malloc(sizeof(ASTNode));
 
-    // Debug output to see the current token
-    printf("Parsing token: type=%s, value=%s\n", tokens[current_token]->type, tokens[current_token]->value);
-
     if (strcmp(tokens[current_token]->type, "integer") == 0) {
-        node->value = strdup(tokens[current_token]->value);
+        // Create a new ASTNode for integer with formatted value
+        node->value = malloc(20);
+        snprintf(node->value, 20, "%s (int)", tokens[current_token]->value);
         node->left = node->right = NULL; // No children for integer nodes
         current_token++;
     } else if (strcmp(tokens[current_token]->value, "(") == 0) {
@@ -77,7 +76,6 @@ ASTNode* parse_factor() {
         }
         current_token++; // Consume ')'
     } else {
-        printf("Current token type: %s, value: %s\n", tokens[current_token]->type, tokens[current_token]->value);
         error("Expected integer or '('.");
     }
 
@@ -86,12 +84,15 @@ ASTNode* parse_factor() {
 
 ASTNode* parse_term() {
     ASTNode *node = parse_factor();
+
+    // Handle multiplication and division
     while (current_token < token_count && 
            strcmp(tokens[current_token]->type, "operator") == 0 && 
            (strcmp(tokens[current_token]->value, "*") == 0 || strcmp(tokens[current_token]->value, "/") == 0)) {
         
         ASTNode *new_node = malloc(sizeof(ASTNode));
-        new_node->value = strdup(tokens[current_token]->value);
+        new_node->value = malloc(20);
+        snprintf(new_node->value, 20, "%s (Multiply)", tokens[current_token]->value);
         new_node->left = node;  // Current node becomes left child
         current_token++; // Move to the next token
         new_node->right = parse_factor(); // Parse the next factor
@@ -103,15 +104,28 @@ ASTNode* parse_term() {
 // Recursive Descent Parsing
 ASTNode* parse_expression() {
     ASTNode *node = parse_term();
+
     while (current_token < token_count && 
-           strcmp(tokens[current_token]->type, "operator") == 0 && 
-           (strcmp(tokens[current_token]->value, "+") == 0 || strcmp(tokens[current_token]->value, "-") == 0)) {
+           strcmp(tokens[current_token]->type, "operator") == 0) 
+        {
         
         ASTNode *new_node = malloc(sizeof(ASTNode));
-        new_node->value = strdup(tokens[current_token]->value);
+        new_node->value = malloc(20);
+        if (strcmp(tokens[current_token]->value, "+") == 0) {
+            snprintf(new_node->value, 20, "%s (Add)", tokens[current_token]->value);
+        }
+        if (strcmp(tokens[current_token]->value, "-") == 0) {
+            snprintf(new_node->value, 20, "%s (Minus)", tokens[current_token]->value);
+        } 
+        if (strcmp(tokens[current_token]->value, "*") == 0) {
+            snprintf(new_node->value, 20, "%s (Multiply)", tokens[current_token]->value);
+        }
+        if (strcmp(tokens[current_token]->value, "/") == 0) {
+            snprintf(new_node->value, 20, "%s (Divide)", tokens[current_token]->value);
+        }
         new_node->left = node; // Current node becomes left child
         current_token++; // Move to the next token
-        new_node->right = parse_term(); // Parse the next term
+        new_node->right = parse_term(); // Parse the next term (which includes factors)
         node = new_node; // Update current node
     }
     return node;
@@ -137,8 +151,6 @@ void parse_tokens_from_file(const char *filename) {
         char *type = strtok(NULL, "\n"); // Second part is the type
         
         if (value && type) {
-            // Debug output for the tokens being read
-            printf("Read token: type=%s, value=%s\n", type, value);
             token->type = strdup(type);
             token->value = strdup(value);
             tokens[token_count++] = token;

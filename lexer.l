@@ -13,6 +13,8 @@ int yywrap(void);  // Declare the yywrap function
 [+\-*/]     { write_output(yytext, "operator"); }
 ";"         { write_output(";", "semicolon"); } // Add semicolon token
 [ \t\n]+    ; // Ignore whitespace
+"("         { write_output("(", "parenthesis"); }
+")"         { write_output(")", "parenthesis"); }
 .           { /* Ignore any other character */ }
 
 %%
